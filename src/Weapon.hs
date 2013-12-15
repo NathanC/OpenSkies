@@ -21,7 +21,7 @@ module Weapon
 import Data.Unique
 import Targeting
 
--- fix: Deprecated weapon name, fix here and throughout code to Weapon
+
 -- fix: Standardize coordinates being touple or seperate. Touple cleaner usually? #style #ugly #records
 data Weapon = Weapon {
                       weaponX :: Float
