@@ -1,0 +1,27 @@
+name:           OpenSkies
+version:        0.1.1
+cabal-version:  >=1.2
+build-type:     Simple
+author:         lykos
+data-files:     
+                resources/Space-Background.jpg, 
+                resources/Space-Stars-Background.jpg
+
+executable OpenSkies
+  hs-source-dirs:  src
+  build-depends:   
+                  base >= 4,
+                  gtk,
+                  containers,
+                  random,
+                  cairo
+  ghc-options:     -O2 -threaded 
+  other-modules:   
+                   Agent,
+                   Paths_OpenSkies,
+                   Radians,
+                   Targeting,
+                   Weapon,
+                   World
+  main-is:         Main.hs
+
