@@ -486,12 +486,18 @@ main = do
         w <- readMVar world
         let (width,height) = worldVisible w    
     
-        win <- widgetGetDrawWindow canvas   
+        win' <- widgetGetWindow canvas   
+        
+        if isNothing win'
+           then do{putStrLn "Widget not realized, error.";mainQuit}
+           else return ()
+
+        let win = fromJust win'
 
         drawWindowBeginPaintRect win r
 
-        renderWithDrawable win $ renderWorld w (fromIntegral width)  (fromIntegral height) bg
-
+        renderWithDrawWindow win $ renderWorld w (fromIntegral width)  (fromIntegral height) bg
+  
         drawWindowEndPaint win 
 
     return True
@@ -505,8 +511,13 @@ main = do
         w <- readMVar world
         let (width,height) = worldVisible w    
     
-        win <- widgetGetDrawWindow infoArea  
+        win' <- widgetGetWindow infoArea
 
+        if isNothing win'
+           then do{putStrLn "Widget not realized, error.";mainQuit}
+           else return ()
+
+        let win = fromJust win'
         
         ctxt <- cairoCreateContext Nothing
         text <- layoutEmpty ctxt
@@ -516,9 +527,7 @@ main = do
                             
 
         drawWindowBeginPaintRect win r
-
-        renderWithDrawable win $ do {setSourceRGB 0 0 1;showLayout text}  
-
+        renderWithDrawWindow win $ do {setSourceRGB 0 0 1;showLayout text}  
         drawWindowEndPaint win 
 
     return True
@@ -552,8 +561,6 @@ main = do
 
   gameOverMessage <- messageDialogNew (Nothing) [] MessageInfo ButtonsOk "Game over."
   
-
-
   windowSetGravity window GravityNorthWest
   
 
@@ -562,8 +569,11 @@ main = do
 
   windowSetDefaultSize window (683) 768
 
-  
-  onDestroy window mainQuit
+  window `on` deleteEvent $ do
+         liftIO
+             mainQuit
+         return False
+
   widgetShowAll window
 
   --repeatedTimer (updateWorld world canvas) ( msDelay 5 )
@@ -1032,7 +1042,9 @@ renderAgents agents =
 -- | Utlity function
 -- fix: elaborate, possibly put in module/qualify, see if there is a more efficent painting proccess? #drawing #bottleneck #speed
 drawWindowBeginPaintFull win = do 
-    (width,height) <- drawableGetSize win
+    width <- drawWindowGetWidth win
+    height <- drawWindowGetHeight win
+
     drawWindowBeginPaintRect win (Rectangle 0 0 width height)
 
 
@@ -1044,13 +1056,29 @@ updateWorld world window canvas infoArea bg = do
   currentWorld <- takeMVar world 
   newWorld <- worldNextStep currentWorld 
   putMVar world newWorld 
+  
+  canvasWin' <- widgetGetWindow canvas
+  
+  if isNothing canvasWin'
+    then do{putStrLn "Widget not realized, error.";mainQuit}
+    else return ()
+
+  let canvasWin = fromJust canvasWin'
+
+
+  infoWin' <- widgetGetWindow infoArea
+
+  if isNothing infoWin'
+    then do{putStrLn "Widget not realized, error.";mainQuit}
+    else return ()
+
+  let infoWin = fromJust infoWin'
+
 
     
-  infoWin <- widgetGetDrawWindow infoArea
+  width' <- drawWindowGetWidth canvasWin
+  height' <- drawWindowGetHeight canvasWin
 
-  win <- widgetGetDrawWindow  canvas
-  (width',height') <- drawableGetSize win
-              
   let width  = realToFrac width'
       height = realToFrac height'
       x = float2Double $ playerX newWorld
@@ -1064,21 +1092,20 @@ updateWorld world window canvas infoArea bg = do
                        "\nScore: " ++ show (playerScore newWorld) ++
                        "\nWeapon selected: " ++ show  (weaponSelected newWorld)
                         
-  
-  
 
-  drawWindowBeginPaintRect win (Rectangle 0 0 width' height')
-    
-  renderWithDrawable win $ renderWorld newWorld width height bg
 
+  drawWindowBeginPaintRect canvasWin (Rectangle 0 0 width' height')
+
+  renderWithDrawWindow canvasWin $ renderWorld newWorld width height bg
    
-  drawWindowEndPaint win 
+  drawWindowEndPaint canvasWin
+
 
   drawWindowBeginPaintFull infoWin
 
-  renderWithDrawable infoWin $ do {setSourceRGB 0 0 1;showLayout text}    
+  renderWithDrawWindow infoWin $ do {setSourceRGB 0 0 1;showLayout text}
 
-  drawWindowEndPaint infoWin 
+  drawWindowEndPaint infoWin
   
 
   return True
