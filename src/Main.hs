@@ -372,7 +372,7 @@ worldNextStep myWorld = do
 
 
 -- |Selects a target on screen, that has not been recently selected.
--- fix: range for "inView" incorrect, should use current visible game-canvas size
+-- fix: range for "inView" incorrect, should use current visible game-gameArea size
 -- add: 
 selectTarget :: World -> TargetSystem
 selectTarget myWorld
@@ -450,35 +450,34 @@ seedWorld = do
 main = do
   initGUI
   
+
+  builder <- builderNew
+
+  gladePath <- getDataFileName "resources/OpenSkies.glade"
+  builderAddFromFile builder gladePath
   
-  --avoid using, instead use postGUIAsync/postGUISync 
-  --make sure to use the gtk-specific ones
-  --timeoutAddFull (yield >> return True)
-  --                priorityDefaultIdle 1
+  window <- builderGetObject builder castToWindow "mainWindow"
   
-       
-       
-  window <- windowNew
-  
+  gameArea <- builderGetObject builder castToDrawingArea "gameArea"
+  infoLabel <- builderGetObject builder castToLabel "infoLabel"
+
+     
   initalWorld <- seedWorld 
     
   world <- newMVar initalWorld 
   
   currentKeysDepressed <- newMVar Set.empty
 
-  canvas <- drawingAreaNew
-  canvas `on` sizeRequest $ return (Requisition 200 200)
-
-  infoArea <- drawingAreaNew
-  infoArea `on` sizeRequest $ return (Requisition 200 60)
 
   --bg <- pixbufNewFromFile "Space-Stars-Background.jpg"
   --bg <- pixbufNewFromFile "Shiptest.png"
-  filePath <- getDataFileName "rec/Space-Background.jpg"
+  filePath <- getDataFileName "resources/Space-Background.jpg"
   bg <- pixbufNewFromFile filePath
   --bg <- return "hello"
 
-  canvas `on` exposeEvent $ do
+
+  --TODO: expose event obsolete
+  gameArea `on` exposeEvent $ do
     r <- eventArea       
 
     liftIO $ do
@@ -486,7 +485,7 @@ main = do
         w <- readMVar world
         let (width,height) = worldVisible w    
     
-        win' <- widgetGetWindow canvas   
+        win' <- widgetGetWindow gameArea   
         
         if isNothing win'
            then do{putStrLn "Widget not realized, error.";mainQuit}
@@ -503,38 +502,8 @@ main = do
     return True
 
 
-  infoArea `on` exposeEvent $ do
-    r <- eventArea       
 
-    liftIO $ do
-        
-        w <- readMVar world
-        let (width,height) = worldVisible w    
-    
-        win' <- widgetGetWindow infoArea
-
-        if isNothing win'
-           then do{putStrLn "Widget not realized, error.";mainQuit}
-           else return ()
-
-        let win = fromJust win'
-        
-        ctxt <- cairoCreateContext Nothing
-        text <- layoutEmpty ctxt
-        layoutSetText text $ "Health: " ++ show (playerHealth w) ++
-                             "\nScore: " ++ show (playerScore w) ++
-                             "\nWeapon selected: " ++ show  (weaponSelected w)
-                            
-
-        drawWindowBeginPaintRect win r
-        renderWithDrawWindow win $ do {setSourceRGB 0 0 1;showLayout text}  
-        drawWindowEndPaint win 
-
-    return True
-
-
-
-  canvas `on` configureEvent $ do
+  gameArea `on` configureEvent $ do
     (width,height) <- eventSize    
     
     liftIO $ do
@@ -543,18 +512,8 @@ main = do
             
     return True
     
-  
-  table <- tableNew 2 1 False
-  tableAttach table canvas 0 1 1 2 [Expand,Shrink,Fill] [Expand,Shrink,Fill] 0 0
-  tableAttach table infoArea 0 1 0 1  [Shrink,Fill] [Shrink,Fill] 0 0
-  tableSetColSpacings table 2 
 
-  set window [windowTitle := "Open Skies",
-             containerBorderWidth := 0,
-             containerChild := table]
-  
-
-  --here are the defined event handlerss  
+  --here are the defined event handlers  
   window `on` keyPressEvent $ parseKeyPress world currentKeysDepressed
   window `on` keyReleaseEvent $ parseKeyRelease world currentKeysDepressed
                                
@@ -576,13 +535,13 @@ main = do
 
   widgetShowAll window
 
-  --repeatedTimer (updateWorld world canvas) ( msDelay 5 )
+  --repeatedTimer (updateWorld world gameArea) ( msDelay 5 )
 
   --repeatedTimer (do{ o <- get window windowOpacity;postGUIAsync (set window [windowOpacity := max 0.1 (o - 0.001)])}) (msDelay 20)
                     
 
   --main tick-timer.
-  _ <- timeoutAddFull (updateWorld world window canvas infoArea bg)
+  _ <- timeoutAddFull (updateWorld world window gameArea infoLabel bg)
                   priorityDefaultIdle 10
   
   
@@ -1052,32 +1011,24 @@ drawWindowBeginPaintFull win = do
 -- | Main function for handling a tick.
 --   Updates the world, then renders 
 --   the information
-updateWorld world window canvas infoArea bg = do
+updateWorld world window gameArea infoLabel bg = do
   currentWorld <- takeMVar world 
   newWorld <- worldNextStep currentWorld 
   putMVar world newWorld 
   
-  canvasWin' <- widgetGetWindow canvas
+  gameWin' <- widgetGetWindow gameArea
   
-  if isNothing canvasWin'
+  if isNothing gameWin'
     then do{putStrLn "Widget not realized, error.";mainQuit}
     else return ()
 
-  let canvasWin = fromJust canvasWin'
+  let gameWin = fromJust gameWin'
 
-
-  infoWin' <- widgetGetWindow infoArea
-
-  if isNothing infoWin'
-    then do{putStrLn "Widget not realized, error.";mainQuit}
-    else return ()
-
-  let infoWin = fromJust infoWin'
 
 
     
-  width' <- drawWindowGetWidth canvasWin
-  height' <- drawWindowGetHeight canvasWin
+  width' <- drawWindowGetWidth gameWin
+  height' <- drawWindowGetHeight gameWin
 
   let width  = realToFrac width'
       height = realToFrac height'
@@ -1085,28 +1036,20 @@ updateWorld world window canvas infoArea bg = do
       y = float2Double $ playerY newWorld
 
 
-
-  ctxt <- cairoCreateContext Nothing
-  text <- layoutEmpty ctxt
-  layoutSetText text $ "Health: " ++ show (playerHealth newWorld) ++
-                       "\nScore: " ++ show (playerScore newWorld) ++
-                       "\nWeapon selected: " ++ show  (weaponSelected newWorld)
-                        
-
-
-  drawWindowBeginPaintRect canvasWin (Rectangle 0 0 width' height')
-
-  renderWithDrawWindow canvasWin $ renderWorld newWorld width height bg
-   
-  drawWindowEndPaint canvasWin
-
-
-  drawWindowBeginPaintFull infoWin
-
-  renderWithDrawWindow infoWin $ do {setSourceRGB 0 0 1;showLayout text}
-
-  drawWindowEndPaint infoWin
   
+  
+  labelSetText infoLabel  $ "Health: " ++ show (playerHealth newWorld) ++
+                            "\nScore: " ++ show (playerScore newWorld) ++
+                            "\nWeapon selected: " ++ show  (weaponSelected newWorld)                     
+
+
+  drawWindowBeginPaintRect gameWin (Rectangle 0 0 width' height')
+
+  renderWithDrawWindow gameWin $ renderWorld newWorld width height bg
+   
+  drawWindowEndPaint gameWin
+
+
 
   return True
      

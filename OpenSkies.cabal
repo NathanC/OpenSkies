@@ -1,11 +1,13 @@
 name:           OpenSkies
-version:        0.1.1
+version:        0.1.2
 cabal-version:  >=1.2
 build-type:     Simple
 author:         lykos
 data-files:     
                 resources/Space-Background.jpg, 
                 resources/Space-Stars-Background.jpg
+		resources/OpenSkies.glade
+		
 
 executable OpenSkies
   hs-source-dirs:  src
