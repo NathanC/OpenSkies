@@ -17,7 +17,7 @@ executable OpenSkies
                   containers,
                   random,
                   cairo
-  ghc-options:     -O2 -threaded 
+  ghc-options:     
   other-modules:   
                    Agent,
                    Paths_OpenSkies,

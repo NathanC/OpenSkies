@@ -11,6 +11,7 @@ module World
 , playerAngle
 , playerX
 , playerY
+, playerSpeed
 , downKey
 , upKey   
 , leftKey 
@@ -41,6 +42,7 @@ data World = World {
                    , playerAngle :: Float
                    , playerX :: Float
                    , playerY :: Float
+                   , playerSpeed :: Float
                    , downKey :: Bool
                    , upKey   :: Bool
                    , leftKey :: Bool
@@ -60,5 +62,5 @@ data World = World {
                    } 
 
 
-defaultWorld = World 0 0 0 0 False False False False False 0 0 [] False M.empty StraightMissile [] defaultTargetSystem 0 0 (0,0)
+defaultWorld = World 0 0 0 0 0 False False False False False 0 0 [] False M.empty StraightMissile [] defaultTargetSystem 0 0 (0,0) 
 

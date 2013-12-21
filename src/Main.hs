@@ -14,6 +14,8 @@ import Graphics.Rendering.Cairo
 import Graphics.UI.Gtk.Gdk.EventM
 import Control.Concurrent.MVar
 
+
+import qualified Data.Set as Set
 import System.Random
 import Control.Monad
 import qualified Data.Map as M
@@ -22,8 +24,6 @@ import Data.List (zipWith4, minimumBy,foldl',partition)
 import Data.Maybe
 import System.IO
 
---import Control.Concurrent.Timer
---import Control.Concurrent.Suspend.Lifted
 import Control.Concurrent
 
 
@@ -39,7 +39,6 @@ import Targeting
 import Paths_OpenSkies
 
 
-import qualified Data.Set as Set
 
 
 
@@ -318,24 +317,23 @@ worldNextStep :: World -> IO World
 
 
 
-
 worldNextStep myWorld = do
 
-    updatedweaponList <- updateweaponList (weaponList myWorld) myWorld                            
-    let speed = 2                
-        xShift = if up 
-                    then cos newTheta * speed     
-                    else 0
-        yShift = if up
-                    then sin newTheta * speed
-                    else 0      
+    updatedweaponList <- updateweaponList (weaponList myWorld) myWorld  
+
+    --TODO: Change it so the inertia is directional                          
+    let newSpeed = if up 
+                    then min 3 (playerSpeed myWorld + 0.03)
+                    else max 0 (playerSpeed myWorld - 0.01) 
+         
+        xShift = cos newTheta * newSpeed     
+                    
+        yShift = sin newTheta * newSpeed
+                      
  
         newTheta = combineAngles (playerAngle myWorld) $ thetaChange left right
-               
-        
+                      
         updatedAgentMap = M.map updateAgent (agentMap myWorld)
-
- 
         
         (newweaponList,newAgentMap,newScore) = collisionUpdate updatedweaponList updatedAgentMap (playerScore myWorld)
 
@@ -343,7 +341,8 @@ worldNextStep myWorld = do
 
          
     return myWorld { playerX = playerX myWorld + xShift
-                   , playerY = playerY myWorld + yShift 
+                   , playerY = playerY myWorld + yShift
+                   , playerSpeed = newSpeed 
                    , playerAngle = newTheta
                    , tickNumber = tickNumber myWorld + 1
                    , weaponList = finalweaponList           
@@ -384,16 +383,23 @@ selectTarget myWorld
            targetsAvailable = filter (\u ->  not (u `elem` alreadyUsed)) allInView       
            allInView = M.keys $ M.filter inView $ agentMap myWorld
            alreadyUsed =  filter (stillInView) $ targetHistory $ playerTargetSystem myWorld
-           inView a = (x > (-width/2+pX) && x < (width/2+pX)) && (y > (-height/2+pY) && y < (height/2+pY))
+           --returns true if the agent is on the same screen view as the player
+           inView a = (screensVertical,screensHorizontal) == (playerScreensVertical,playerScreensHorizontal)
                       where (x,y) = agentCoords a
                             (pX,pY) = (playerX myWorld, playerY myWorld)
+                            screensVertical = fromIntegral $ floor $ (y + height/2) / height
+                            screensHorizontal =  fromIntegral $ floor $ (x + width/2) / width
+                            playerScreensVertical = fromIntegral $ floor $ (pY + height/2) / height
+                            playerScreensHorizontal = fromIntegral $ floor $ (pX + width/2) / width
+
            (width,height) = (fromIntegral widthRaw, fromIntegral heightRaw)
            (widthRaw,heightRaw) = worldVisible myWorld
            stillInView k = if isNothing maybeAgent
                              then False
                              else inView (fromJust maybeAgent)
                            where maybeAgent = M.lookup k (agentMap myWorld)
-
+           
+          
 
 --successor function that loops through bounded types
 succ' :: (Bounded a, Eq a, Enum a) => a -> a
@@ -434,7 +440,7 @@ seedWorld = do
                 newStarList  = zip3 starXs starYs starRs
                
 
-            return $ World 10  0 0 0 False False False False False 3 0  [] False (M.fromList (zip newUniques newAgents ))
+            return $ World 10 0 0 0 0 False False False False False 3 0  [] False (M.fromList (zip newUniques newAgents ))
                            StraightMissile newStarList (TargetSystem Nothing []) 0 1000 (0,0)
 
 
@@ -668,6 +674,76 @@ parseKeyPress world currentKeysDepressed = do
 
 
 
+renderPlayer myWorld = do
+    
+    let x = float2Double $ playerX myWorld
+        y = float2Double $ playerY myWorld
+        r = float2Double $ playerRadius myWorld
+        t = playerAngle myWorld
+
+    save
+    
+    translate (x) (-y)
+
+    setSourceRGB 1 0 0
+
+    
+    rotate (- (float2Double t))
+
+    setSourceRGB 0.30 0.30 0.34
+
+    moveTo (r*1.5)0
+    lineTo (-9) (-r-3) 
+    lineTo (-4) 0
+    lineTo (-9)  (r+3)
+    lineTo (r*1.5) 0
+    fillPreserve
+    
+    save
+    
+    setSourceRGB 1 1 1 
+    stroke
+    
+    restore
+    
+
+    arc 0 0 r 0 (2*pi)
+    
+    fillPreserve
+    
+    save
+    setSourceRGB 1 1 1
+    stroke
+    restore
+
+    
+    arc 0 0 (0.7 * r) 0  (2*pi)
+    clip
+
+    setSourceRGB 1 1 1
+    
+    arc (0+1.3*r) 0 r  (0) (2*pi)
+    fill
+    
+    resetClip
+
+    if (upKey myWorld)
+        then renderFlame myWorld
+        else return ()
+
+
+    {-        
+    moveTo (-5) (-5)
+    lineTo (0+*5) 0
+    lineTo (-5) (5)
+    lineTo (-3) 0
+    -} 
+
+    fill
+
+    restore
+
+
 renderFlame w = do
     let x = float2Double $ playerX w
         y = float2Double $ playerY w
@@ -733,85 +809,31 @@ renderWorld myWorld width height bg = do
     --setSourcePixbuf bg (-x - 200) (y - 200)
     paint
 
+
     
+    
+    let screensVertical = fromIntegral $ floor $ (y + height/2) / height
+        screensHorizontal =  fromIntegral $ floor $ (x + width/2) / width
 
     translate (width / 2) (height / 2)
     --at this point, the screen is centered at 0
     --gloss x = x, gloss y = (-y)
     --will fix this.
 
+    translate (-width * screensHorizontal) (height * screensVertical)
+
+    
+    --translate the screen so that it shows the current screen
+    --the player is on.
+    
 
     
     setLineWidth 1
 
+    renderPlayer myWorld
+ 
+    setSourceRGB 1 0 0    
 
-
-    --render the player 
-    setSourceRGB 1 0 0
-   
-
-    
-    save
-
-    rotate (- (float2Double pTheta))
-
-    setSourceRGB 0.30 0.30 0.34
-
-    moveTo (r*1.5)0
-    lineTo (-9) (-r-3) 
-    lineTo (-4) 0
-    lineTo (-9)  (r+3)
-    lineTo (r*1.5) 0
-    fillPreserve
-    
-    save
-    
-    setSourceRGB 1 1 1 
-    stroke
-    
-    restore
-    
-
-    arc 0 0 r 0 (2*pi)
-    
-    fillPreserve
-    
-    save
-    setSourceRGB 1 1 1
-    stroke
-    restore
-
-    
-    arc 0 0 (0.7 * r) 0  (2*pi)
-    clip
-
-    setSourceRGB 1 1 1
-    
-    arc (0+1.3*r) 0 r  (0) (2*pi)
-    fill
-    
-    resetClip
-
-    if upKey myWorld
-        then renderFlame myWorld
-        else return ()
-
-
-    {-        
-    moveTo (-5) (-5)
-    lineTo (0+*5) 0
-    lineTo (-5) (5)
-    lineTo (-3) 0
-    -} 
-
-
-    fill
-    restore
-    
-
-    save
-    translate (-x) y
-    
     renderTargetCrosshair myWorld
     
     setSourceRGB 0 1 0
@@ -822,8 +844,7 @@ renderWorld myWorld width height bg = do
     
     renderWeapons $ weaponList myWorld       
     
-    restore
-
+ 
     
 
 
@@ -1024,8 +1045,6 @@ updateWorld world window gameArea infoLabel bg = do
 
   let gameWin = fromJust gameWin'
 
-
-
     
   width' <- drawWindowGetWidth gameWin
   height' <- drawWindowGetHeight gameWin
@@ -1037,14 +1056,14 @@ updateWorld world window gameArea infoLabel bg = do
 
 
   
-  
+    
   labelSetText infoLabel  $ "Health: " ++ show (playerHealth newWorld) ++
                             "\nScore: " ++ show (playerScore newWorld) ++
                             "\nWeapon selected: " ++ show  (weaponSelected newWorld)                     
-
-
+   
+  
   drawWindowBeginPaintRect gameWin (Rectangle 0 0 width' height')
-
+  
   renderWithDrawWindow gameWin $ renderWorld newWorld width height bg
    
   drawWindowEndPaint gameWin
