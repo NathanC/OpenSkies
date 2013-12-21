@@ -1,9 +1,5 @@
-This was my first real haskell project. It's a 2d space game, using GTK.
+This was my first real haskell project. It's a 2d space game, using GTK3.
 
 Long term goals is for this to be a polished game that's enjoyable to play, 
 and possibly to migrate the game over to use FRP.
-
-My license for this is currently "All rights reserved", simply because it's
-my first haskell game and I want to develop it just by myself initially, but
-at some point I'll probably make it open-source.
 
