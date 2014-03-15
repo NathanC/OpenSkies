@@ -5,7 +5,7 @@ and possibly to migrate the game over to use FRP.
 
 Here are some screenshots:
 
-![Space launches missiles, "x" changes missile type](http://painterandhacker.imgur.com/all/)
+![Space launches missiles, "x" changes missile type](http://i.imgur.com/H4v2YMy.png)
 ![Explosive missiles have larger explosion radiuses](http://i.imgur.com/bEPXTJK.png)
 ![Seeking missiles seek the ship targeted with TAB](http://i.imgur.com/sQRZ3lR.png)
 
