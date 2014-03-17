@@ -3,6 +3,16 @@ This was my first real haskell project. It's a 2d space game, using GTK3.
 Long term goals is for this to be a polished game that's enjoyable to play, 
 and possibly to migrate the game over to use FRP.
 
+Here are some screenshots:
+
+![Space launches missiles, "x" changes missile type](http://i.imgur.com/H4v2YMy.png)
+
+
+![Explosive missiles have larger explosion radiuses](http://i.imgur.com/bEPXTJK.png)
+
+
+![Seeking missiles seek the ship targeted with TAB](http://i.imgur.com/sQRZ3lR.png)
+
 To build/install this game, just download a branch and then type:
 cabal configure
 cabal build
