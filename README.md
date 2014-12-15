@@ -22,14 +22,11 @@ Then just run the OpenSkies executable located in your .cabal folder.
 (it was compiled with the -threaded flag, so feel free to run it
 with +RST -N to run with multiple processesors) 
 
-The master branch has the player located at the center of the screen.
+The player located at the center of the screen.
 Left and right turn the ship, and foward moves the ship forward. The ship
 stays centered in the screen, but the world moves around it.
 
-In the "screens" branch, the ship moves around the screen, and moves to the 
-next area when it crosses the screen border.
-
-In both of the branches, "x" changes the weapons, and space fires.
+"x" changes the weapon selected, and space fires it.
 For the "SeekingMissle" weapon, pressing tab cycles through the visible enemies,
 and firing a seeking missile when an enemy is selected will
 cause it to seek out the enemy and destroy it.
