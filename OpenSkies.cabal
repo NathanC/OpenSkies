@@ -16,7 +16,9 @@ executable OpenSkies
                   gtk3,
                   containers,
                   random,
-                  cairo
+                  cairo,
+                  glib
+
   ghc-options:     -O2 -threaded -Wall -fno-warn-unused-do-bind
   other-modules:   
                    Agent,

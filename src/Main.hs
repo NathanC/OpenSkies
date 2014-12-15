@@ -21,6 +21,7 @@ import Data.Unique
 import Data.List (zipWith4, minimumBy,foldl',partition)
 import Data.Maybe
 import System.IO
+import System.Glib.UTFString
 
 --import Control.Concurrent.Timer
 --import Control.Concurrent.Suspend.Lifted
@@ -578,14 +579,17 @@ parseKeyRelease world currentKeysDepressed = do
             
             kv <- eventKeyVal
             k <- eventKeyName    
-            
+            let kString = glibToString k            
+
             liftIO $ do
                
 
                 modifyMVar_ currentKeysDepressed (\c -> return (Set.delete kv c))
                     
                 w <- takeMVar world 
-                case k of 
+             
+
+                case kString of 
                     "w" -> putMVar world $! w {upKey = False}
                     "a" -> putMVar world $! w {leftKey = False}
                     "s" -> putMVar world $! w {downKey = False}
@@ -596,22 +600,22 @@ parseKeyRelease world currentKeysDepressed = do
                     "Right" -> putMVar world $! w {rightKey = False} 
                     _  -> putMVar world $! w   
 
-                putStrLn $ "key released: " ++  (show k)
+                putStrLn $ "key released: " ++  kString
             
             return True
 
 
 
 
-parseNewKeyPress world k = do
+parseNewKeyPress world kString = do
             
-            putStrLn $ "key pressed: " ++ (show k)
+            putStrLn $ "key pressed: " ++ kString
       
                  
             w <- takeMVar world 
 
       
-            case k of 
+            case kString of 
                 "w" -> putMVar world $! w {upKey = True}
                 "a" -> putMVar world $! w {leftKey = True}
                 "s" -> putMVar world $! w {downKey = True}
@@ -644,14 +648,17 @@ parseKeyPress world currentKeysDepressed = do
 
             kv <- eventKeyVal 
             k  <- eventKeyName
-        
+            let kString = glibToString k         
+    
             liftIO $ do 
                 c <- takeMVar currentKeysDepressed
-                if Set.member kv c 
-                   then do{putMVar currentKeysDepressed c}               
-                   else do{putMVar currentKeysDepressed (Set.insert kv c);parseNewKeyPress world k}
                 
 
+                if Set.member kv c 
+                   then do{putMVar currentKeysDepressed c}               
+                   else do{putMVar currentKeysDepressed (Set.insert kv c);parseNewKeyPress world kString}
+                                  
+                    
             return True
                 
                    
