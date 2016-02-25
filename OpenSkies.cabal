@@ -6,7 +6,7 @@ author:         lykos
 data-files:     
                 resources/Space-Background.jpg, 
                 resources/Space-Stars-Background.jpg
-		resources/OpenSkies.glade
+		        resources/OpenSkies.glade
 		
 
 executable OpenSkies

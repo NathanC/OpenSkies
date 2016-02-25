@@ -59,6 +59,4 @@ data World = World {
                    , worldVisible :: (Int,Int)
                    } 
 
-
 defaultWorld = World 0 0 0 0 False False False False False 0 0 [] False M.empty StraightMissile [] defaultTargetSystem 0 0 (0,0)
-

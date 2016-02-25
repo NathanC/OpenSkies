@@ -55,11 +55,8 @@ isHeatSeeking _ = False
 getExplosiveTimer (Explosive t) = t
 
 
-
-
 data WeaponType = HeatSeeking | Seeking (Maybe Unique) | Straight | Explosive Integer | Explosion
                     deriving ( Eq)
-
 
 data Missile     = HeatSeekingMissile | StraightMissile | SeekingMissile | ExplosiveMissile deriving (Show, Enum, Bounded, Eq)
 

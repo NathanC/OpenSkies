@@ -7,15 +7,10 @@ module Radians
 ,radiansToDegrees
 )where
 
-
-
 radiansToDegrees t = 180/pi * t
-
-
 
 -- |Takes any angle, in radians, and reduces it to the coterminal
 --  angle in the range [-pi,pi]
-
 reduceAngle theta
       | rawReducedAngle <= pi = rawReducedAngle
       | otherwise = -2*pi + rawReducedAngle
@@ -28,11 +23,7 @@ reduceAngle theta
 
 
 -- |Gives a new angle in the range [0,2*pi], given an old angle and a change in radians  
-
 combineAngles theta deltaTheta = reduceAngle (theta+deltaTheta)
-
-
-
 
 
 -- |Gives the angle, in radians, between two points.
@@ -48,8 +39,6 @@ angleBetweenTwoPoints (x1,y1) (x2,y2)
                deltaY = if abs deltaYraw < 0.001 then 0 else deltaYraw
                rawTheta = atan2 deltaY deltaX  
                
-      
-
 
 -- |Takes a starting angle, target angle, and shifts the starting
 -- angle to the target angle by a given percentage of the archlength 
@@ -59,8 +48,6 @@ shiftTowards currentAngle targetAngle percent = combineAngles currentAngle (dist
     
       where distance = distanceBetweenAngles currentAngle targetAngle 
 
-
-       
 
 -- |Returns the shortest angle, in radians, that descripes the arc between two points
 --  on a circle. Result will be in range [-pi,pi]
